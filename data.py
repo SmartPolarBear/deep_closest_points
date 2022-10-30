@@ -10,15 +10,17 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 from torch.utils.data import Dataset
 
-
 # Part of the code is referred from: https://github.com/charlesq34/pointnet
+
+DATASET_NAME = 'modelnet40_hdf5_2048'
+
 
 def download():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     DATA_DIR = os.path.join(BASE_DIR, 'data')
     if not os.path.exists(DATA_DIR):
         os.mkdir(DATA_DIR)
-    if not os.path.exists(os.path.join(DATA_DIR, 'modelnet40_ply_hdf5_2048')):
+    if not os.path.exists(os.path.join(DATA_DIR, DATASET_NAME)):
         www = 'https://shapenet.cs.stanford.edu/media/modelnet40_ply_hdf5_2048.zip'
         zipfile = os.path.basename(www)
         os.system('wget %s --no-check-certificate; unzip %s' % (www, zipfile))
@@ -32,7 +34,7 @@ def load_data(partition):
     DATA_DIR = os.path.join(BASE_DIR, 'data')
     all_data = []
     all_label = []
-    for h5_name in glob.glob(os.path.join(DATA_DIR, 'modelnet40_ply_hdf5_2048', 'ply_data_%s*.h5' % partition)):
+    for h5_name in glob.glob(os.path.join(DATA_DIR, DATASET_NAME, f'{partition}*.h5')):
         f = h5py.File(h5_name)
         data = f['data'][:].astype('float32')
         label = f['label'][:].astype('int64')
@@ -70,11 +72,11 @@ class ModelNet40(Dataset):
         if self.unseen:
             ######## simulate testing on first 20 categories while training on last 20 categories
             if self.partition == 'test':
-                self.data = self.data[self.label>=20]
-                self.label = self.label[self.label>=20]
+                self.data = self.data[self.label >= 20]
+                self.label = self.label[self.label >= 20]
             elif self.partition == 'train':
-                self.data = self.data[self.label<20]
-                self.label = self.label[self.label<20]
+                self.data = self.data[self.label < 20]
+                self.label = self.label[self.label < 20]
 
     def __getitem__(self, item):
         pointcloud = self.data[item][:self.num_points]
@@ -93,14 +95,14 @@ class ModelNet40(Dataset):
         siny = np.sin(angley)
         sinz = np.sin(anglez)
         Rx = np.array([[1, 0, 0],
-                        [0, cosx, -sinx],
-                        [0, sinx, cosx]])
+                       [0, cosx, -sinx],
+                       [0, sinx, cosx]])
         Ry = np.array([[cosy, 0, siny],
-                        [0, 1, 0],
-                        [-siny, 0, cosy]])
+                       [0, 1, 0],
+                       [-siny, 0, cosy]])
         Rz = np.array([[cosz, -sinz, 0],
-                        [sinz, cosz, 0],
-                        [0, 0, 1]])
+                       [sinz, cosz, 0],
+                       [0, 0, 1]])
         R_ab = Rx.dot(Ry).dot(Rz)
         R_ba = R_ab.T
         translation_ab = np.array([np.random.uniform(-0.5, 0.5), np.random.uniform(-0.5, 0.5),
@@ -119,8 +121,8 @@ class ModelNet40(Dataset):
         pointcloud2 = np.random.permutation(pointcloud2.T).T
 
         return pointcloud1.astype('float32'), pointcloud2.astype('float32'), R_ab.astype('float32'), \
-               translation_ab.astype('float32'), R_ba.astype('float32'), translation_ba.astype('float32'), \
-               euler_ab.astype('float32'), euler_ba.astype('float32')
+            translation_ab.astype('float32'), R_ba.astype('float32'), translation_ba.astype('float32'), \
+            euler_ab.astype('float32'), euler_ba.astype('float32')
 
     def __len__(self):
         return self.data.shape[0]

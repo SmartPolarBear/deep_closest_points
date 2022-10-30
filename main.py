@@ -42,9 +42,9 @@ def _init_(args):
         os.makedirs('checkpoints/' + args.exp_name)
     if not os.path.exists('checkpoints/' + args.exp_name + '/' + 'models'):
         os.makedirs('checkpoints/' + args.exp_name + '/' + 'models')
-    os.system('cp main.py checkpoints' + '/' + args.exp_name + '/' + 'main.py.backup')
-    os.system('cp model.py checkpoints' + '/' + args.exp_name + '/' + 'model.py.backup')
-    os.system('cp data.py checkpoints' + '/' + args.exp_name + '/' + 'data.py.backup')
+    # os.system('cp main.py checkpoints' + '/' + args.exp_name + '/' + 'main.py.backup')
+    # os.system('cp model.py checkpoints' + '/' + args.exp_name + '/' + 'model.py.backup')
+    # os.system('cp data.py checkpoints' + '/' + args.exp_name + '/' + 'data.py.backup')
 
 
 def test_one_epoch(args, net, test_loader):
@@ -598,7 +598,7 @@ def main():
     if args.model == 'dcp':
         net = DCP(args).cuda()
         if args.eval:
-            if args.model_path is '':
+            if args.model_path == '':
                 model_path = 'checkpoints' + '/' + args.exp_name + '/models/model.best.t7'
             else:
                 model_path = args.model_path
