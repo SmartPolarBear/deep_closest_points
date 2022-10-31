@@ -1,3 +1,11 @@
 pretrained/*
-data/*
+data/data/*
 checkpoints/*
+
+*.pyc
+__pycache__
+*.pyo
+*.pyd
+*.so
+*.dylib
+*.dll
