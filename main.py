@@ -11,13 +11,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim.lr_scheduler import MultiStepLR
-from data import ModelNet40
 from model import DCP
 from util import transform_point_cloud, npmat2euler
 import numpy as np
 from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
+
+from data.modelnet40 import ModelNet40
+from data.mydataset import get_forest_dataset
 
 
 # Part of the code is referred from: https://github.com/floodsung/LearningToCompare_FSL
@@ -42,9 +44,9 @@ def _init_(args):
         os.makedirs('checkpoints/' + args.exp_name)
     if not os.path.exists('checkpoints/' + args.exp_name + '/' + 'models'):
         os.makedirs('checkpoints/' + args.exp_name + '/' + 'models')
-    # os.system('cp main.py checkpoints' + '/' + args.exp_name + '/' + 'main.py.backup')
-    # os.system('cp model.py checkpoints' + '/' + args.exp_name + '/' + 'model.py.backup')
-    # os.system('cp data.py checkpoints' + '/' + args.exp_name + '/' + 'data.py.backup')
+    os.system('cp main.py checkpoints' + '/' + args.exp_name + '/' + 'main.py.backup')
+    os.system('cp model.py checkpoints' + '/' + args.exp_name + '/' + 'model.py.backup')
+    os.system('cp data.py checkpoints' + '/' + args.exp_name + '/' + 'data.py.backup')
 
 
 def test_one_epoch(args, net, test_loader):
@@ -564,7 +566,7 @@ def main():
                         help='Wheter to test on unseen category')
     parser.add_argument('--num_points', type=int, default=1024, metavar='N',
                         help='Num of points to use')
-    parser.add_argument('--dataset', type=str, default='modelnet40', choices=['modelnet40'], metavar='N',
+    parser.add_argument('--dataset', type=str, default='modelnet40', choices=['modelnet40','forest'], metavar='N',
                         help='dataset to use')
     parser.add_argument('--factor', type=float, default=4, metavar='N',
                         help='Divided factor for rotations')
@@ -592,6 +594,15 @@ def main():
             ModelNet40(num_points=args.num_points, partition='test', gaussian_noise=args.gaussian_noise,
                        unseen=args.unseen, factor=args.factor),
             batch_size=args.test_batch_size, shuffle=False, drop_last=False)
+    elif args.dataset == 'forest':
+            train_loader = DataLoader(
+                get_forest_dataset(num_points=args.num_points, mode='train', gaussian_noise=args.gaussian_noise,
+                       unseen=args.unseen, factor=args.factor),
+                batch_size=args.batch_size, shuffle=True, drop_last=True)
+            test_loader = DataLoader(
+                get_forest_dataset(num_points=args.num_points, mode='test', gaussian_noise=args.gaussian_noise,
+                       unseen=args.unseen, factor=args.factor),
+                batch_size=args.test_batch_size, shuffle=False, drop_last=False)
     else:
         raise Exception("not implemented")
 
