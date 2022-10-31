@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .pointnetpp.pointnet2_sem_seg_msg import get_model as PointNetPP
+from pointnetpp.pointnet2_sem_seg_msg import get_model as PointNetPP
 
 torch.square = lambda x: x ** 2
 

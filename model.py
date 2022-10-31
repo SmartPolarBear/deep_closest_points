@@ -442,6 +442,8 @@ class DCP(nn.Module):
             self.emb_nn = PointNet(emb_dims=self.emb_dims)
         elif args.emb_nn == 'dgcnn':
             self.emb_nn = DGCNN(emb_dims=self.emb_dims)
+        elif args.emb_nn=='merger':
+            self.emb_nn = PointNet(emb_dims=self.emb_dims) # TODO
         else:
             raise Exception('Not implemented')
 

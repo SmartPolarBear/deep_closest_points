@@ -4,7 +4,8 @@ from __future__ import print_function
 import conf
 
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='{}'.format(conf.PREFER_CUDA)
+
+os.environ['CUDA_VISIBLE_DEVICES'] = '{}'.format(conf.PREFER_CUDA)
 
 import gc
 import argparse
@@ -143,8 +144,8 @@ def test_one_epoch(args, net, test_loader):
     return total_loss * 1.0 / num_examples, total_cycle_loss / num_examples, \
            mse_ab * 1.0 / num_examples, mae_ab * 1.0 / num_examples, \
            mse_ba * 1.0 / num_examples, mae_ba * 1.0 / num_examples, rotations_ab, \
-           translations_ab, rotations_ab_pred, translations_ab_pred, rotations_ba, \
-           translations_ba, rotations_ba_pred, translations_ba_pred, eulers_ab, eulers_ba
+        translations_ab, rotations_ab_pred, translations_ab_pred, rotations_ba, \
+        translations_ba, rotations_ba_pred, translations_ba_pred, eulers_ab, eulers_ba
 
 
 def train_one_epoch(args, net, train_loader, opt):
@@ -242,17 +243,16 @@ def train_one_epoch(args, net, train_loader, opt):
     return total_loss * 1.0 / num_examples, total_cycle_loss / num_examples, \
            mse_ab * 1.0 / num_examples, mae_ab * 1.0 / num_examples, \
            mse_ba * 1.0 / num_examples, mae_ba * 1.0 / num_examples, rotations_ab, \
-           translations_ab, rotations_ab_pred, translations_ab_pred, rotations_ba, \
-           translations_ba, rotations_ba_pred, translations_ba_pred, eulers_ab, eulers_ba
+        translations_ab, rotations_ab_pred, translations_ab_pred, rotations_ba, \
+        translations_ba, rotations_ba_pred, translations_ba_pred, eulers_ab, eulers_ba
 
 
 def test(args, net, test_loader, boardio, textio):
-
     test_loss, test_cycle_loss, \
-    test_mse_ab, test_mae_ab, test_mse_ba, test_mae_ba, test_rotations_ab, test_translations_ab, \
-    test_rotations_ab_pred, \
-    test_translations_ab_pred, test_rotations_ba, test_translations_ba, test_rotations_ba_pred, \
-    test_translations_ba_pred, test_eulers_ab, test_eulers_ba = test_one_epoch(args, net, test_loader)
+        test_mse_ab, test_mae_ab, test_mse_ba, test_mae_ba, test_rotations_ab, test_translations_ab, \
+        test_rotations_ab_pred, \
+        test_translations_ab_pred, test_rotations_ba, test_translations_ba, test_rotations_ba_pred, \
+        test_translations_ba_pred, test_eulers_ab, test_eulers_ba = test_one_epoch(args, net, test_loader)
     test_rmse_ab = np.sqrt(test_mse_ab)
     test_rmse_ba = np.sqrt(test_mse_ba)
 
@@ -295,7 +295,6 @@ def train(args, net, train_loader, test_loader, boardio, textio):
         opt = optim.Adam(net.parameters(), lr=args.lr, weight_decay=1e-4)
     scheduler = MultiStepLR(opt, milestones=[75, 150, 200], gamma=0.1)
 
-
     best_test_loss = np.inf
     best_test_cycle_loss = np.inf
     best_test_mse_ab = np.inf
@@ -322,19 +321,19 @@ def train(args, net, train_loader, test_loader, boardio, textio):
 
     for epoch in range(args.epochs):
         train_loss, train_cycle_loss, \
-        train_mse_ab, train_mae_ab, train_mse_ba, train_mae_ba, train_rotations_ab, train_translations_ab, \
-        train_rotations_ab_pred, \
-        train_translations_ab_pred, train_rotations_ba, train_translations_ba, train_rotations_ba_pred, \
-        train_translations_ba_pred, train_eulers_ab, train_eulers_ba = train_one_epoch(args, net, train_loader, opt)
+            train_mse_ab, train_mae_ab, train_mse_ba, train_mae_ba, train_rotations_ab, train_translations_ab, \
+            train_rotations_ab_pred, \
+            train_translations_ab_pred, train_rotations_ba, train_translations_ba, train_rotations_ba_pred, \
+            train_translations_ba_pred, train_eulers_ab, train_eulers_ba = train_one_epoch(args, net, train_loader, opt)
         test_loss, test_cycle_loss, \
-        test_mse_ab, test_mae_ab, test_mse_ba, test_mae_ba, test_rotations_ab, test_translations_ab, \
-        test_rotations_ab_pred, \
-        test_translations_ab_pred, test_rotations_ba, test_translations_ba, test_rotations_ba_pred, \
-        test_translations_ba_pred, test_eulers_ab, test_eulers_ba = test_one_epoch(args, net, test_loader)
+            test_mse_ab, test_mae_ab, test_mse_ba, test_mae_ba, test_rotations_ab, test_translations_ab, \
+            test_rotations_ab_pred, \
+            test_translations_ab_pred, test_rotations_ba, test_translations_ba, test_rotations_ba_pred, \
+            test_translations_ba_pred, test_eulers_ab, test_eulers_ba = test_one_epoch(args, net, test_loader)
         train_rmse_ab = np.sqrt(train_mse_ab)
         test_rmse_ab = np.sqrt(test_mse_ab)
 
-        scheduler.step() # avoid warning "In PyTorch 1.1.0 and later, you should call them in the opposite order..."
+        scheduler.step()  # avoid warning "In PyTorch 1.1.0 and later, you should call them in the opposite order..."
 
         train_rmse_ba = np.sqrt(train_mse_ba)
         test_rmse_ba = np.sqrt(test_mse_ba)
@@ -525,7 +524,7 @@ def main():
                         choices=['dcp'],
                         help='Model to use, [dcp]')
     parser.add_argument('--emb_nn', type=str, default='pointnet', metavar='N',
-                        choices=['pointnet', 'dgcnn'],
+                        choices=['pointnet', 'dgcnn', 'merger'],
                         help='Embedding nn to use, [pointnet, dgcnn]')
     parser.add_argument('--pointer', type=str, default='transformer', metavar='N',
                         choices=['identity', 'transformer'],
@@ -569,7 +568,7 @@ def main():
                         help='Wheter to test on unseen category')
     parser.add_argument('--num_points', type=int, default=1024, metavar='N',
                         help='Num of points to use')
-    parser.add_argument('--dataset', type=str, default='modelnet40', choices=['modelnet40','forest'], metavar='N',
+    parser.add_argument('--dataset', type=str, default='modelnet40', choices=['modelnet40', 'forest'], metavar='N',
                         help='dataset to use')
     parser.add_argument('--factor', type=float, default=4, metavar='N',
                         help='Divided factor for rotations')
@@ -598,14 +597,14 @@ def main():
                        unseen=args.unseen, factor=args.factor),
             batch_size=args.test_batch_size, shuffle=False, drop_last=False)
     elif args.dataset == 'forest':
-            train_loader = DataLoader(
-                get_forest_dataset(num_points=args.num_points, partition='train', gaussian_noise=args.gaussian_noise,
-                       unseen=args.unseen, factor=args.factor),
-                batch_size=args.batch_size, shuffle=True, drop_last=True)
-            test_loader = DataLoader(
-                get_forest_dataset(num_points=args.num_points, partition='test', gaussian_noise=args.gaussian_noise,
-                       unseen=args.unseen, factor=args.factor),
-                batch_size=args.test_batch_size, shuffle=False, drop_last=False)
+        train_loader = DataLoader(
+            get_forest_dataset(num_points=args.num_points, partition='train', gaussian_noise=args.gaussian_noise,
+                               unseen=args.unseen, factor=args.factor),
+            batch_size=args.batch_size, shuffle=True, drop_last=True)
+        test_loader = DataLoader(
+            get_forest_dataset(num_points=args.num_points, partition='test', gaussian_noise=args.gaussian_noise,
+                               unseen=args.unseen, factor=args.factor),
+            batch_size=args.test_batch_size, shuffle=False, drop_last=False)
     else:
         raise Exception("not implemented")
 
@@ -632,7 +631,6 @@ def main():
         test(args, net, test_loader, boardio, textio)
     else:
         train(args, net, train_loader, test_loader, boardio, textio)
-
 
     print('FINISH')
     boardio.close()
