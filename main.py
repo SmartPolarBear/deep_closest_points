@@ -1,9 +1,11 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-
 from __future__ import print_function
+
+import conf
+
 import os
+os.environ['CUDA_VISIBLE_DEVICES']='{}'.format(conf.PREFER_CUDA)
+
 import gc
 import argparse
 import torch
@@ -44,9 +46,9 @@ def _init_(args):
         os.makedirs('checkpoints/' + args.exp_name)
     if not os.path.exists('checkpoints/' + args.exp_name + '/' + 'models'):
         os.makedirs('checkpoints/' + args.exp_name + '/' + 'models')
-    os.system('cp main.py checkpoints' + '/' + args.exp_name + '/' + 'main.py.backup')
-    os.system('cp model.py checkpoints' + '/' + args.exp_name + '/' + 'model.py.backup')
-    os.system('cp data.py checkpoints' + '/' + args.exp_name + '/' + 'data.py.backup')
+    # os.system('cp main.py checkpoints' + '/' + args.exp_name + '/' + 'main.py.backup')
+    # os.system('cp model.py checkpoints' + '/' + args.exp_name + '/' + 'model.py.backup')
+    # os.system('cp data.py checkpoints' + '/' + args.exp_name + '/' + 'data.py.backup')
 
 
 def test_one_epoch(args, net, test_loader):
@@ -319,7 +321,6 @@ def train(args, net, train_loader, test_loader, boardio, textio):
     best_test_t_mae_ba = np.inf
 
     for epoch in range(args.epochs):
-        scheduler.step()
         train_loss, train_cycle_loss, \
         train_mse_ab, train_mae_ab, train_mse_ba, train_mae_ba, train_rotations_ab, train_translations_ab, \
         train_rotations_ab_pred, \
@@ -332,6 +333,8 @@ def train(args, net, train_loader, test_loader, boardio, textio):
         test_translations_ba_pred, test_eulers_ab, test_eulers_ba = test_one_epoch(args, net, test_loader)
         train_rmse_ab = np.sqrt(train_mse_ab)
         test_rmse_ab = np.sqrt(test_mse_ab)
+
+        scheduler.step() # avoid warning "In PyTorch 1.1.0 and later, you should call them in the opposite order..."
 
         train_rmse_ba = np.sqrt(train_mse_ba)
         test_rmse_ba = np.sqrt(test_mse_ba)
@@ -596,11 +599,11 @@ def main():
             batch_size=args.test_batch_size, shuffle=False, drop_last=False)
     elif args.dataset == 'forest':
             train_loader = DataLoader(
-                get_forest_dataset(num_points=args.num_points, mode='train', gaussian_noise=args.gaussian_noise,
+                get_forest_dataset(num_points=args.num_points, partition='train', gaussian_noise=args.gaussian_noise,
                        unseen=args.unseen, factor=args.factor),
                 batch_size=args.batch_size, shuffle=True, drop_last=True)
             test_loader = DataLoader(
-                get_forest_dataset(num_points=args.num_points, mode='test', gaussian_noise=args.gaussian_noise,
+                get_forest_dataset(num_points=args.num_points, partition='test', gaussian_noise=args.gaussian_noise,
                        unseen=args.unseen, factor=args.factor),
                 batch_size=args.test_batch_size, shuffle=False, drop_last=False)
     else:
@@ -619,8 +622,10 @@ def main():
                 return
             net.load_state_dict(torch.load(model_path), strict=False)
         if torch.cuda.device_count() > 1:
-            net = nn.DataParallel(net)
-            print("Let's use", torch.cuda.device_count(), "GPUs!")
+            # net = nn.DataParallel(net)
+            # print("Let's use", torch.cuda.device_count(), "GPUs!")
+            torch.cuda.set_device(torch.cuda.device(PREFER_CUDA))
+
     else:
         raise Exception('Not implemented')
     if args.eval:

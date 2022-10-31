@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-
-import os
-import sys
-import glob
-import h5py
-import copy
-import math
-import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.autograd import Variable
 from util import quat2mat
+from torch.autograd import Variable
+import torch.nn.functional as F
+import torch.nn as nn
+import torch
+import numpy as np
+import math
+import copy
+import h5py
+import glob
+import sys
+import os
+import conf
+os.environ['CUDA_VISIBLE_DEVICES'] = '{}'.format(conf.PREFER_CUDA)
 
 
 # Part of the code is referred from: http://nlp.seas.harvard.edu/2018/04/03/attention.html#positional-encoding
@@ -24,7 +24,8 @@ def clones(module, N):
 
 def attention(query, key, value, mask=None, dropout=None):
     d_k = query.size(-1)
-    scores = torch.matmul(query, key.transpose(-2, -1).contiguous()) / math.sqrt(d_k)
+    scores = torch.matmul(
+        query, key.transpose(-2, -1).contiguous()) / math.sqrt(d_k)
     if mask is not None:
         scores = scores.masked_fill(mask == 0, -1e9)
     p_attn = F.softmax(scores, dim=-1)
@@ -32,7 +33,8 @@ def attention(query, key, value, mask=None, dropout=None):
 
 
 def nearest_neighbor(src, dst):
-    inner = -2 * torch.matmul(src.transpose(1, 0).contiguous(), dst)  # src, dst (num_dims, num_points)
+    # src, dst (num_dims, num_points)
+    inner = -2 * torch.matmul(src.transpose(1, 0).contiguous(), dst)
     distances = -torch.sum(src ** 2, dim=0, keepdim=True).transpose(1, 0).contiguous() - inner - torch.sum(dst ** 2,
                                                                                                            dim=0,
                                                                                                            keepdim=True)
@@ -44,7 +46,6 @@ def knn(x, k):
     inner = -2 * torch.matmul(x.transpose(2, 1).contiguous(), x)
     xx = torch.sum(x ** 2, dim=1, keepdim=True)
     pairwise_distance = -xx - inner - xx.transpose(2, 1).contiguous()
-
     idx = pairwise_distance.topk(k=k, dim=-1)[1]  # (batch_size, num_points, k)
     return idx
 
@@ -53,9 +54,10 @@ def get_graph_feature(x, k=20):
     # x = x.squeeze()
     idx = knn(x, k=k)  # (batch_size, num_points, k)
     batch_size, num_points, _ = idx.size()
-    device = torch.device('cuda')
 
-    idx_base = torch.arange(0, batch_size, device=device).view(-1, 1, 1) * num_points
+    idx_base = torch.arange(
+        0, batch_size).view(-1, 1, 1) * num_points
+    idx_base=idx_base.cuda()
 
     idx = idx + idx_base
 
@@ -357,7 +359,8 @@ class Transformer(nn.Module):
         attn = MultiHeadedAttention(self.n_heads, self.emb_dims)
         ff = PositionwiseFeedForward(self.emb_dims, self.ff_dims, self.dropout)
         self.model = EncoderDecoder(Encoder(EncoderLayer(self.emb_dims, c(attn), c(ff), self.dropout), self.N),
-                                    Decoder(DecoderLayer(self.emb_dims, c(attn), c(attn), c(ff), self.dropout), self.N),
+                                    Decoder(DecoderLayer(self.emb_dims, c(attn), c(
+                                        attn), c(ff), self.dropout), self.N),
                                     nn.Sequential(),
                                     nn.Sequential(),
                                     nn.Sequential())
@@ -367,8 +370,10 @@ class Transformer(nn.Module):
         tgt = input[1]
         src = src.transpose(2, 1).contiguous()
         tgt = tgt.transpose(2, 1).contiguous()
-        tgt_embedding = self.model(src, tgt, None, None).transpose(2, 1).contiguous()
-        src_embedding = self.model(tgt, src, None, None).transpose(2, 1).contiguous()
+        tgt_embedding = self.model(
+            src, tgt, None, None).transpose(2, 1).contiguous()
+        src_embedding = self.model(
+            tgt, src, None, None).transpose(2, 1).contiguous()
         return src_embedding, tgt_embedding
 
 
@@ -387,7 +392,8 @@ class SVDHead(nn.Module):
         batch_size = src.size(0)
 
         d_k = src_embedding.size(1)
-        scores = torch.matmul(src_embedding.transpose(2, 1).contiguous(), tgt_embedding) / math.sqrt(d_k)
+        scores = torch.matmul(src_embedding.transpose(
+            2, 1).contiguous(), tgt_embedding) / math.sqrt(d_k)
         scores = torch.softmax(scores, dim=2)
 
         src_corr = torch.matmul(tgt, scores.transpose(2, 1).contiguous())
@@ -396,7 +402,8 @@ class SVDHead(nn.Module):
 
         src_corr_centered = src_corr - src_corr.mean(dim=2, keepdim=True)
 
-        H = torch.matmul(src_centered, src_corr_centered.transpose(2, 1).contiguous())
+        H = torch.matmul(
+            src_centered, src_corr_centered.transpose(2, 1).contiguous())
 
         U, S, V = [], [], []
         R = []
@@ -421,7 +428,8 @@ class SVDHead(nn.Module):
         S = torch.stack(S, dim=0)
         R = torch.stack(R, dim=0)
 
-        t = torch.matmul(-R, src.mean(dim=2, keepdim=True)) + src_corr.mean(dim=2, keepdim=True)
+        t = torch.matmul(-R, src.mean(dim=2, keepdim=True)) + \
+            src_corr.mean(dim=2, keepdim=True)
         return R, t.view(batch_size, 3)
 
 
@@ -457,16 +465,21 @@ class DCP(nn.Module):
         src_embedding = self.emb_nn(src)
         tgt_embedding = self.emb_nn(tgt)
 
-        src_embedding_p, tgt_embedding_p = self.pointer(src_embedding, tgt_embedding)
+        src_embedding_p, tgt_embedding_p = self.pointer(
+            src_embedding, tgt_embedding)
 
         src_embedding = src_embedding + src_embedding_p
         tgt_embedding = tgt_embedding + tgt_embedding_p
 
-        rotation_ab, translation_ab = self.head(src_embedding, tgt_embedding, src, tgt)
+        rotation_ab, translation_ab = self.head(
+            src_embedding, tgt_embedding, src, tgt)
         if self.cycle:
-            rotation_ba, translation_ba = self.head(tgt_embedding, src_embedding, tgt, src)
+            rotation_ba, translation_ba = self.head(
+                tgt_embedding, src_embedding, tgt, src)
 
         else:
             rotation_ba = rotation_ab.transpose(2, 1).contiguous()
-            translation_ba = -torch.matmul(rotation_ba, translation_ab.unsqueeze(2)).squeeze(2)
+            translation_ba = - \
+                torch.matmul(
+                    rotation_ba, translation_ab.unsqueeze(2)).squeeze(2)
         return rotation_ab, translation_ab, rotation_ba, translation_ba
